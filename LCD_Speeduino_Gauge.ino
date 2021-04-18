@@ -194,6 +194,7 @@ void runLog() {
   }
 }
 
+// TODO: floats for AFR/Lambda, BattV, etc. values
 void parseData() {
   for( int i = 0; i < 40; i++ ){
     switch( i ){
