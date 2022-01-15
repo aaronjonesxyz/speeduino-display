@@ -1,3 +1,12 @@
+/*  Speeduino LCD Gauge - Aaron Jones 2020
+
+    The gaugeMap array contains the Serial3 data indexes that will be displayed, a full list can be found at:
+    https://speeduino.com/wiki/index.php/Secondary_Serial_IO_interface#Retrieve_realtime_data
+
+*/
+
+#define HEADLESS 0   // Change this to 1 to run the logger with no LCD
+
 #include <Arduino.h>
 #include "TFT_22_ILI9225.h"
 #define SDCARD_SPI SPI2
@@ -50,12 +59,14 @@ HardwareSerial Serial3(PB11, PB10);
 
 void setup() {
 
-  tft.begin();
-  tft.clear();
+  if( !HEADLESS ) {
+    tft.begin();
+    tft.clear();
 
-  tft.setOrientation(3);
+    tft.setOrientation(3); // If your LCD isn't oriented correctly, change this number. 
 
-  tft.setFont(Terminal12x16);
+    tft.setFont(Terminal12x16);
+  }
   
   Serial3.begin(115200);
   Serial.begin(115200);
@@ -65,17 +76,20 @@ void setup() {
   // see if the card is present and can be initialized:
   if (!SD.begin(PB12)) {
     Serial.println("Card failed, or not present");
-    tft.drawText(0,0,"No SD Card.");
-    delay(250);
-    tft.drawText(0,0,"                    ");
+    if( !HEADLESS ) {
+      tft.drawText(0,0,"No SD Card.");
+      delay(250);
+      tft.drawText(0,0,"                    ");
+    }
     // don't do anything more:
     return;
   }
   Serial.println("Card initialized.");
-  tft.drawText(0,0,"SD Init.");
+  if( !HEADLESS ) {
+    tft.drawText(0,0,"SD Init.");
     delay(50);
     tft.drawText(0,0,"                    ");
-
+  }
   if( SD.exists("f.num") ){
     Serial.println("Counter file found.");
     file = SD.open("f.num", O_RDWR);
@@ -103,11 +117,13 @@ void setup() {
   sprintf(filename, "SDLog%d.csv", fnum );
   Serial.println(filename);
   file = SD.open(filename, FILE_WRITE);
+  file.close();
+  file = SD.open(filename, O_WRITE | O_CREAT);
   Serial.println(file);
   if(file){
     file.println(header1);
     file.println(header2);
-    file.close();
+    file.flush();
   } else {
     Serial.println("File I/O Error!");
   }
@@ -117,41 +133,39 @@ void loop() {
 
   updateTimer();
 
-
-
 }
 
 void updateTimer() {
-    resetData();
     if( ( millis() - LogUpdateMillis ) >= LOG_UPDATE ){
-    Serial3.print("n");
-    
-    serialMillis = millis();
-    while( Serial3.available() == 0 ){ if( millis() - serialMillis > 100 ){ break; } }
-    i = 0;
-    while( Serial3.available() > 0 ){
-      if( i == 0 ){
-        nReply = Serial3.read();
-      }else if( i > 2 && i < 40 ){
-        serialData[i-3] = Serial3.read();
-      } else {
-        Serial3.read();
+      resetData();
+      Serial3.print("n");
+
+      serialMillis = millis();
+      while( Serial3.available() == 0 ){ if( millis() - serialMillis > 100 ){ break; } }
+      i = 0;
+      while( Serial3.available() > 0 ){
+        if( i == 0 ){
+          nReply = Serial3.read();
+        }else if( i > 2 && i < 40 ){
+          serialData[i-3] = Serial3.read();
+        } else {
+          Serial3.read();
+        }
+        i++;
       }
-      i++;
-    }
-    if( nReply == 110 ){
-      parseData();
-      runLog();
-    }
+      if( nReply == 110 ){
+        parseData();
+        runLog();
+      }
 
-    LogUpdateMillis = millis();
-    Serial.println(LogUpdateMillis);
+      LogUpdateMillis = millis();
+      Serial.println(LogUpdateMillis);
 
-    if( gaugeCurr > 5 ){ 
-    gaugeCurr = 0;
-    }
-    gaugeUpdate( gaugeCurr );
-    gaugeCurr++;
+      if( gaugeCurr > 5 && !HEADLESS ){ 
+      gaugeCurr = 0;
+      }
+      gaugeUpdate( gaugeCurr );
+      gaugeCurr++;
     
   }
 }
@@ -169,7 +183,6 @@ void gaugeUpdate(int i) {
 }
 
 void runLog() {
-  file = SD.open(filename, FILE_WRITE);
   if(file){
     char tC[6];
     
@@ -188,7 +201,7 @@ void runLog() {
     char d[4];
     sprintf(d,"%d",parsedData[i]);
     file.println(d);
-    file.close();
+    file.flush();
   } else {
     Serial.println("File I/O Error!");
   }
