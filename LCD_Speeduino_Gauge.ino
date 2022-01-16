@@ -64,12 +64,12 @@ HardwareSerial Serial3(PB11, PB10);
 void setup() {
 
   #ifndef HEADLESS
-    tft.begin();
-    tft.clear();
+  tft.begin();
+  tft.clear();
 
-    tft.setOrientation(3); // If your LCD isn't oriented correctly, change this number. 
+  tft.setOrientation(3); // If your LCD isn't oriented correctly, change this number. 
 
-    tft.setFont(Terminal12x16);
+  tft.setFont(Terminal12x16);
   #endif
   
   Serial3.begin(115200);
@@ -80,20 +80,24 @@ void setup() {
   // see if the card is present and can be initialized:
   if (!SD.begin(PB12)) {
     Serial.println("Card failed, or not present");
+
     #ifndef HEADLESS
-      tft.drawText(0,0,"No SD Card.");
-      delay(250);
-      tft.drawText(0,0,"                    ");
-    }
+    tft.drawText(0,0,"No SD Card.");
+    delay(250);
+    tft.drawText(0,0,"                    ");
+    #endif
+
     // don't do anything more:
     return;
   }
   Serial.println("Card initialized.");
+
   #ifndef HEADLESS
-    tft.drawText(0,0,"SD Init.");
-    delay(50);
-    tft.drawText(0,0,"                    ");
-  }
+  tft.drawText(0,0,"SD Init.");
+  delay(50);
+  tft.drawText(0,0,"                    ");
+  #endif
+
   if( SD.exists("f.num") ){
     Serial.println("Counter file found.");
     file = SD.open("f.num", O_RDWR);
@@ -165,11 +169,13 @@ void updateTimer() {
       LogUpdateMillis = millis();
       Serial.println(LogUpdateMillis);
 
-      if( gaugeCurr > 5 && !HEADLESS ){ 
+      #ifndef HEADLESS
+      if( gaugeCurr > 5 ){ 
       gaugeCurr = 0;
       }
       gaugeUpdate( gaugeCurr );
       gaugeCurr++;
+      #endif
     
   }
 }
