@@ -5,10 +5,12 @@
 
 */
 
-#define HEADLESS 0   // Change this to 1 to run the logger with no LCD
+//#define HEADLESS   // uncomment to run the logger with no LCD
 
 #include <Arduino.h>
+#ifndef HEADLESS
 #include "TFT_22_ILI9225.h"
+#endif
 #define SDCARD_SPI SPI2
 #include <SPI.h>
 #include <SD.h>
@@ -29,7 +31,9 @@
 unsigned long GaugeUpdateMillis = 0;
 unsigned long LogUpdateMillis = 0;
 
+#ifndef HEADLESS
 TFT_22_ILI9225 tft = TFT_22_ILI9225(TFT_RST, TFT_RS, TFT_CS, TFT_LED, TFT_BRIGHTNESS);
+#endif
 
 extern uint8_t Source_Code_Pro_Black37x62[];
 
@@ -59,14 +63,14 @@ HardwareSerial Serial3(PB11, PB10);
 
 void setup() {
 
-  if( !HEADLESS ) {
+  #ifndef HEADLESS
     tft.begin();
     tft.clear();
 
     tft.setOrientation(3); // If your LCD isn't oriented correctly, change this number. 
 
     tft.setFont(Terminal12x16);
-  }
+  #endif
   
   Serial3.begin(115200);
   Serial.begin(115200);
@@ -76,7 +80,7 @@ void setup() {
   // see if the card is present and can be initialized:
   if (!SD.begin(PB12)) {
     Serial.println("Card failed, or not present");
-    if( !HEADLESS ) {
+    #ifndef HEADLESS
       tft.drawText(0,0,"No SD Card.");
       delay(250);
       tft.drawText(0,0,"                    ");
@@ -85,7 +89,7 @@ void setup() {
     return;
   }
   Serial.println("Card initialized.");
-  if( !HEADLESS ) {
+  #ifndef HEADLESS
     tft.drawText(0,0,"SD Init.");
     delay(50);
     tft.drawText(0,0,"                    ");
